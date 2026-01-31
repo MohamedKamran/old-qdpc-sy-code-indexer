@@ -77,7 +77,9 @@ export class OllamaEmbedder implements IEmbedder {
 
       if (this.cache.size > 10000) {
         const firstKey = this.cache.keys().next().value;
-        this.cache.delete(firstKey);
+        if (firstKey) {
+          this.cache.delete(firstKey);
+        }
       }
 
       return embedding;

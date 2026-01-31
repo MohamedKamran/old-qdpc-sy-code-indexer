@@ -1,6 +1,5 @@
 import pLimit from 'p-limit';
 import { CodeParser } from '../parsers/CodeParser';
-import { OllamaEmbedder } from '../embedders/OllamaEmbedder';
 import type { IEmbedder } from '../embedders/EmbedderInterface';
 import { VectorStore } from '../storage/VectorStore';
 import { CacheManager } from '../core/CacheManager';

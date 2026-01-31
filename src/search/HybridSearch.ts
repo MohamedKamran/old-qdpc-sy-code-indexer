@@ -3,7 +3,6 @@ import { VectorStore } from '../storage/VectorStore';
 import { OllamaEmbedder } from '../embedders/OllamaEmbedder';
 import type { IEmbedder } from '../embedders/EmbedderInterface';
 import { SearchResult, HybridSearchOptions } from './types';
-import { QueryExpander } from './QueryExpander';
 import { ReRanker } from './ReRanker';
 import { BoostCalculator } from './BoostCalculator';
 
@@ -11,7 +10,6 @@ export class HybridSearch {
   private configManager: ConfigManager;
   private vectorStore: VectorStore;
   private embedder: IEmbedder;
-  private queryExpander: QueryExpander;
   private reRanker: ReRanker;
   private boostCalculator: BoostCalculator;
 
@@ -34,7 +32,6 @@ export class HybridSearch {
       dimensions: embedderConfig.dimensions,
       baseUrl: embedderConfig.baseUrl || 'http://localhost:11434'
     });
-    this.queryExpander = new QueryExpander();
     this.reRanker = new ReRanker();
     this.boostCalculator = new BoostCalculator();
   }

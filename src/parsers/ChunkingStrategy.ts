@@ -49,7 +49,6 @@ export class ChunkingStrategy {
     language: string
   ): CodeBlock[] {
     const blocks: CodeBlock[] = [];
-    const lines = content.split('\n');
 
     const processNode = (node: SyntaxNode, parentSymbol?: string) => {
       const nodeType = node.type;
@@ -248,7 +247,7 @@ export class ChunkingStrategy {
     return lines.slice(startLine, endLine + 1).join('\n');
   }
 
-  private extractSymbolName(node: SyntaxNode, nodeType: string): string | undefined {
+  private extractSymbolName(node: SyntaxNode): string | undefined {
     const identifierTypes = ['identifier', 'property_identifier'];
     
     for (const child of node.children) {

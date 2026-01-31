@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs/promises';
-import * as hnswlib from 'hnswlib-node';
+import { HierarchicalNSW } from 'hnswlib-node';
 import { createTablesSQL, insertInitialMetadataSQL, CodeBlock, FileMetadata, SearchStats } from './Schema';
 
 interface VectorIndexConfig {
@@ -14,7 +14,7 @@ interface VectorIndexConfig {
 
 export class VectorStore {
   private db: Database.Database;
-  private hnswIndex: hnswlib.HnswLib | null = null;
+  private hnswIndex: HierarchicalNSW | null = null;
   private hnswConfig: VectorIndexConfig;
   private indexPath: string;
 
@@ -42,10 +42,10 @@ export class VectorStore {
     try {
       const exists = await fs.access(hnswPath).then(() => true).catch(() => false);
       
-      this.hnswIndex = new hnswlib.HnswLib(this.hnswConfig.space, this.hnswConfig.numDimensions);
+      this.hnswIndex = new HierarchicalNSW(this.hnswConfig.space, this.hnswConfig.numDimensions);
       
       if (exists) {
-        this.hnswIndex.loadIndex(hnswPath);
+        await this.hnswIndex.readIndex(hnswPath);
       } else {
         this.hnswIndex.initIndex(
           this.hnswConfig.maxElements,
@@ -127,7 +127,11 @@ export class VectorStore {
       this.hnswIndex.setEf(efSearch);
     }
 
-    return this.hnswIndex.searchKNN(queryVector, k);
+    const result = this.hnswIndex.searchKnn(queryVector, k);
+    return result.neighbors.map((neighbor, i) => ({
+      label: neighbor,
+      distance: result.distances[i]
+    }));
   }
 
   getCodeBlock(id: string): CodeBlock | undefined {
@@ -199,7 +203,7 @@ export class VectorStore {
       ${limit ? 'LIMIT ?' : ''}
     `);
     
-    const results = limit ? stmt.all(query, limit) : stmt.all(query) as Array<{ block_id: string; score: number }>;
+    const results = (limit ? stmt.all(query, limit) : stmt.all(query)) as Array<{ block_id: string; score: number }>;
     
     return results.map(r => ({
       blockId: r.block_id,
@@ -289,7 +293,7 @@ export class VectorStore {
   async save(): Promise<void> {
     const hnswPath = path.join(this.indexPath, 'vectors.hnsw');
     if (this.hnswIndex) {
-      this.hnswIndex.saveIndex(hnswPath);
+      await this.hnswIndex.writeIndex(hnswPath);
     }
   }
 

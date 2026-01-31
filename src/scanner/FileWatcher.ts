@@ -1,8 +1,6 @@
 import chokidar from 'chokidar';
 import path from 'path';
-import { CacheManager } from '../core/CacheManager';
 import { BatchProcessor } from './BatchProcessor';
-import { ConfigManager } from '../core/ConfigManager';
 
 export interface FileWatcherOptions {
   ignored?: string[];
@@ -11,7 +9,6 @@ export interface FileWatcherOptions {
 
 export class FileWatcher {
   private workspacePath: string;
-  private cacheManager: CacheManager;
   private batchProcessor: BatchProcessor;
   private watcher: chokidar.FSWatcher | null = null;
   private debounceMs: number;
@@ -19,11 +16,9 @@ export class FileWatcher {
 
   constructor(
     workspacePath: string,
-    cacheManager: CacheManager,
     batchProcessor: BatchProcessor
   ) {
     this.workspacePath = workspacePath;
-    this.cacheManager = cacheManager;
     this.batchProcessor = batchProcessor;
     this.debounceMs = 500;
   }

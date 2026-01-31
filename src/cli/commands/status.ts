@@ -39,7 +39,7 @@ export const statusCommand = new Command('status')
 
       for (const [lang, count] of sortedLanguages) {
         const percentage = ((count / stats.totalBlocks) * 100).toFixed(1);
-        const bar = '█'.repeat(Math.round(percentage / 2));
+        const bar = '█'.repeat(Math.round(parseFloat(percentage) / 2));
         console.log(`  ${chalk.cyan(lang.padEnd(15))} ${chalk.gray(bar.padEnd(20))} ${chalk.white(count.toString().padStart(6))} (${chalk.dim(percentage + '%')})`);
       }
 

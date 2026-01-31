@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Ignore } from 'ignore';
+import ignore from 'ignore';
 
 export interface ScanOptions {
   includePatterns?: string[];
@@ -17,7 +17,7 @@ export interface ScanResult {
 }
 
 export class DirectoryScanner {
-  private ignore: Ignore;
+  private ignore: ReturnType<typeof ignore>;
 
   constructor(options: ScanOptions = {}) {
     this.ignore = ignore({
