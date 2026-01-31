@@ -158,7 +158,6 @@ export class IndexManager {
 
     this.fileWatcher = new FileWatcher(
       this.workspacePath,
-      this.cacheManager,
       this.batchProcessor
     );
 
@@ -176,7 +175,6 @@ export class IndexManager {
     }
     
     this.embedder.dispose();
-    this.parser.dispose();
     this.vectorStore.close();
     await this.stateManager.save();
     await this.cacheManager.save();

@@ -115,7 +115,7 @@ export class VectorStore {
     }
 
     const label = parseInt(id.replace(/[^0-9]/g, ''), 36);
-    this.hnswIndex.addPoint(vector, label);
+    this.hnswIndex.addPoint(Array.from(vector), label);
   }
 
   searchKNN(queryVector: Float32Array, k: number, efSearch?: number): Array<{ label: number; distance: number }> {
@@ -127,7 +127,7 @@ export class VectorStore {
       this.hnswIndex.setEf(efSearch);
     }
 
-    const result = this.hnswIndex.searchKnn(queryVector, k);
+    const result = this.hnswIndex.searchKnn(Array.from(queryVector), k);
     return result.neighbors.map((neighbor, i) => ({
       label: neighbor,
       distance: result.distances[i]

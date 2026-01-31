@@ -51,8 +51,6 @@ export class ChunkingStrategy {
     const blocks: CodeBlock[] = [];
 
     const processNode = (node: SyntaxNode, parentSymbol?: string) => {
-      const nodeType = node.type;
-
       if (this.isSemanticBlock(node, language)) {
         const block = this.createSemanticBlock(
           node,
@@ -65,7 +63,7 @@ export class ChunkingStrategy {
           blocks.push(block);
         }
 
-        const symbolName = this.extractSymbolName(node, nodeType);
+        const symbolName = this.extractSymbolName(node);
         for (const child of node.children) {
           if (!this.isSemanticBlock(child, language)) {
             processNode(child, symbolName);
@@ -136,7 +134,7 @@ export class ChunkingStrategy {
     }
 
     const blockType = node.type;
-    const symbolName = this.extractSymbolName(node, blockType);
+    const symbolName = this.extractSymbolName(node);
     const contentHash = this.hashContent(nodeContent);
     const now = Date.now();
 
@@ -169,7 +167,7 @@ export class ChunkingStrategy {
     const startLine = node.startPosition.row;
     const endLine = node.endPosition.row;
     const blockType = node.type;
-    const symbolName = this.extractSymbolName(node, blockType);
+    const symbolName = this.extractSymbolName(node);
     
     let currentLine = startLine;
     let lastChunkEnd = startLine;
