@@ -2,6 +2,10 @@
 
 Production-grade semantic code search with local-first architecture.
 
+---
+DEPRECATED CODE : Syntheo uses more advanced technology to Search through code in the latest versions
+---
+
 ## Features
 
 - **🔍 Semantic Search**: Find code by meaning, not just keywords
