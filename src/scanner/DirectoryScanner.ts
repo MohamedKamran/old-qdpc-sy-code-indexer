@@ -100,7 +100,7 @@ export class DirectoryScanner {
             }
           } else if (entry.isFile()) {
             if (this.shouldIncludeFile(fullPath, options)) {
-              result.files.push(relativePath);
+              result.files.push(fullPath);
             } else {
               result.skipped.push(relativePath);
             }

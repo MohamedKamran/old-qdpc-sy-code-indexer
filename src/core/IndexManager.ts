@@ -1,15 +1,15 @@
 import path from 'path';
-import { ConfigManager } from './ConfigManager';
-import { StateManager } from './StateManager';
-import { CacheManager } from './CacheManager';
-import { VectorStore } from '../storage/VectorStore';
-import { OllamaEmbedder } from '../embedders/OllamaEmbedder';
-import type { IEmbedder } from '../embedders/EmbedderInterface';
-import { FileWatcher } from '../scanner/FileWatcher';
-import { CodeParser } from '../parsers/CodeParser';
-import { ChunkingStrategy } from '../parsers/ChunkingStrategy';
-import { DirectoryScanner } from '../scanner/DirectoryScanner';
-import { BatchProcessor } from '../scanner/BatchProcessor';
+import { ConfigManager } from './ConfigManager.js';
+import { StateManager } from './StateManager.js';
+import { CacheManager } from './CacheManager.js';
+import { VectorStore } from '../storage/VectorStore.js';
+import { OllamaEmbedder } from '../embedders/OllamaEmbedder.js';
+import type { IEmbedder } from '../embedders/EmbedderInterface.js';
+import { FileWatcher } from '../scanner/FileWatcher.js';
+import { CodeParser } from '../parsers/CodeParser.js';
+import { ChunkingStrategy } from '../parsers/ChunkingStrategy.js';
+import { DirectoryScanner } from '../scanner/DirectoryScanner.js';
+import { BatchProcessor } from '../scanner/BatchProcessor.js';
 
 import * as fs from 'fs/promises';
 
@@ -61,7 +61,7 @@ export class IndexManager {
     
     const chunkingStrategy = new ChunkingStrategy({
       targetTokens: indexingConfig.chunkTokens,
-      maxTokens: 2048,
+      maxTokens: 1500,
       overlapTokens: indexingConfig.overlapTokens,
       preserveFunctionBoundaries: true,
       preserveClassBoundaries: true,
@@ -74,10 +74,12 @@ export class IndexManager {
     });
 
     this.batchProcessor = new BatchProcessor(
+      this.workspacePath,
       this.parser,
       this.embedder,
       this.vectorStore,
       this.cacheManager,
+      this.stateManager,
       {
         batchSize: indexingConfig.batchSize,
         concurrency: indexingConfig.concurrency
@@ -115,9 +117,7 @@ export class IndexManager {
 
       console.log(`Indexing ${filesToIndex.length} files...`);
 
-      await this.batchProcessor.processFiles(
-        filesToIndex.map(f => path.join(this.workspacePath, f))
-      );
+      await this.batchProcessor.processFiles(filesToIndex);
 
       this.stateManager.stopIndexing();
       await this.vectorStore.save();
@@ -131,11 +131,12 @@ export class IndexManager {
     const changed: string[] = [];
 
     for (const file of files) {
-      const fullPath = path.join(this.workspacePath, file);
+      const fullPath = file;
+      const relativePath = path.relative(this.workspacePath, file);
       
       try {
         const stats = await fs.stat(fullPath);
-        const cached = this.cacheManager.getEntry(file);
+        const cached = this.cacheManager.getEntry(relativePath);
         
         if (!cached || cached.lastModified !== stats.mtimeMs) {
           changed.push(fullPath);

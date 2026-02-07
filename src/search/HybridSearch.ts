@@ -1,10 +1,10 @@
-import { ConfigManager } from '../core/ConfigManager';
-import { VectorStore } from '../storage/VectorStore';
-import { OllamaEmbedder } from '../embedders/OllamaEmbedder';
-import type { IEmbedder } from '../embedders/EmbedderInterface';
-import { SearchResult, HybridSearchOptions } from './types';
-import { ReRanker } from './ReRanker';
-import { BoostCalculator } from './BoostCalculator';
+import { ConfigManager } from '../core/ConfigManager.js';
+import { VectorStore } from '../storage/VectorStore.js';
+import { OllamaEmbedder } from '../embedders/OllamaEmbedder.js';
+import type { IEmbedder } from '../embedders/EmbedderInterface.js';
+import { SearchResult, HybridSearchOptions } from './types.js';
+import { ReRanker } from './ReRanker.js';
+import { BoostCalculator } from './BoostCalculator.js';
 
 export class HybridSearch {
   private configManager: ConfigManager;
@@ -103,7 +103,10 @@ export class HybridSearch {
     const results: SearchResult[] = [];
 
     for (const result of knnResults) {
-      const block = this.vectorStore.getCodeBlock(this.labelToId(result.label));
+      const blockId = this.vectorStore.labelToBlockId(result.label);
+      if (!blockId) continue;
+      
+      const block = this.vectorStore.getCodeBlock(blockId);
       
       if (block) {
         results.push({
@@ -232,12 +235,13 @@ export class HybridSearch {
   }
 
   private hashQuery(query: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('md5').update(query.toLowerCase()).digest('hex');
-  }
-
-  private labelToId(label: number): string {
-    return label.toString(36);
+    let hash = 0;
+    for (let i = 0; i < query.length; i++) {
+      const char = query.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(36);
   }
 
   dispose(): void {

@@ -2,9 +2,9 @@ import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
 import path from 'path';
-import { ConfigManager } from '../../core/ConfigManager';
-import { HybridSearch } from '../../search/HybridSearch';
-import { HybridSearchOptions } from '../../search/types';
+import { ConfigManager } from '../../core/ConfigManager.js';
+import { HybridSearch } from '../../search/HybridSearch.js';
+import { HybridSearchOptions } from '../../search/types.js';
 
 export const searchCommand = new Command('search')
   .description('Search the codebase')

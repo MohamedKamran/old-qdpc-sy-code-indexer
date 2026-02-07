@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import Parser from 'tree-sitter';
-import { ChunkingStrategy, CodeBlock } from './ChunkingStrategy';
+import { ChunkingStrategy, CodeBlock } from './ChunkingStrategy.js';
 
 export interface ParsedFile {
   filePath: string;
@@ -23,14 +23,23 @@ export class CodeParser {
     const language = this.detectLanguage(ext);
     const content = await fs.readFile(filePath, 'utf-8');
     
+    let blocks: CodeBlock[];
+    
+    // Try to parse with tree-sitter if supported language
     const parser = new Parser();
     const tree = parser.parse(content);
-    const blocks = this.chunkingStrategy.chunkFile(
-      filePath,
-      content,
-      tree.rootNode,
-      language
-    );
+    
+    if (tree && tree.rootNode) {
+      blocks = this.chunkingStrategy.chunkFile(
+        filePath,
+        content,
+        tree.rootNode,
+        language
+      );
+    } else {
+      // Fallback to simple text chunking for unsupported file types
+      blocks = [this.chunkingStrategy.createFileBlock(filePath, content, language)];
+    }
 
     return {
       filePath,

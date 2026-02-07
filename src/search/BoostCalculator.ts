@@ -1,4 +1,4 @@
-import { SearchResult } from './types';
+import { SearchResult } from './types.js';
 
 export class BoostCalculator {
   private languageDistribution: Record<string, number> = {};

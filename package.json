@@ -2,9 +2,10 @@
   "name": "code-indexer",
   "version": "1.0.0",
   "description": "Production-grade semantic code search with local-first architecture",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "codeindex": "./dist/cli/index.js"
+    "codeindex": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -49,7 +50,7 @@
     "prettier": "^3.2.4",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=18.0.0"

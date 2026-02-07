@@ -1,8 +1,11 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs/promises';
-import { HierarchicalNSW } from 'hnswlib-node';
-import { createTablesSQL, insertInitialMetadataSQL, CodeBlock, FileMetadata, SearchStats } from './Schema';
+import hnswlib from 'hnswlib-node';
+import { createTablesSQL, insertInitialMetadataSQL, CodeBlock, FileMetadata, SearchStats } from './Schema.js';
+
+const { HierarchicalNSW } = hnswlib;
+type HierarchicalNSWType = InstanceType<typeof HierarchicalNSW>;
 
 interface VectorIndexConfig {
   space: 'cosine' | 'l2' | 'ip';
@@ -14,9 +17,10 @@ interface VectorIndexConfig {
 
 export class VectorStore {
   private db: Database.Database;
-  private hnswIndex: HierarchicalNSW | null = null;
+  private hnswIndex: HierarchicalNSWType | null = null;
   private hnswConfig: VectorIndexConfig;
   private indexPath: string;
+  private nextLabel: number = 0;
 
   constructor(indexPath: string, config: VectorIndexConfig) {
     this.indexPath = indexPath;
@@ -33,6 +37,10 @@ export class VectorStore {
     const insertMetadata = this.db.prepare(insertInitialMetadataSQL);
     insertMetadata.run(Date.now());
     
+    // Load next label from existing vector_map
+    const maxLabel = this.db.prepare('SELECT MAX(label) as max_label FROM vector_map').get() as any;
+    this.nextLabel = (maxLabel?.max_label ?? -1) + 1;
+    
     await this.initializeHNSW();
   }
 
@@ -46,6 +54,13 @@ export class VectorStore {
       
       if (exists) {
         await this.hnswIndex.readIndex(hnswPath);
+        
+        // Ensure the loaded index has the correct capacity
+        const currentMax = this.hnswIndex.getMaxElements();
+        if (currentMax < this.hnswConfig.maxElements) {
+          console.log(`Resizing loaded index from ${currentMax} to ${this.hnswConfig.maxElements} elements`);
+          this.hnswIndex.resizeIndex(this.hnswConfig.maxElements);
+        }
       } else {
         this.hnswIndex.initIndex(
           this.hnswConfig.maxElements,
@@ -114,8 +129,27 @@ export class VectorStore {
       throw new Error('HNSW index not initialized');
     }
 
-    const label = parseInt(id.replace(/[^0-9]/g, ''), 36);
+    // Check if we need to resize the index
+    const currentCount = this.hnswIndex.getCurrentCount();
+    const maxElements = this.hnswIndex.getMaxElements();
+    
+    if (currentCount >= maxElements - 1) {
+      const newSize = maxElements * 2;
+      this.hnswIndex.resizeIndex(newSize);
+    }
+
+    const label = this.nextLabel++;
+    
+    // Store mapping from integer label to block ID
+    const mapStmt = this.db.prepare('INSERT OR REPLACE INTO vector_map (label, block_id) VALUES (?, ?)');
+    mapStmt.run(label, id);
+    
     this.hnswIndex.addPoint(Array.from(vector), label);
+  }
+
+  labelToBlockId(label: number): string | undefined {
+    const row = this.db.prepare('SELECT block_id FROM vector_map WHERE label = ?').get(label) as any;
+    return row?.block_id;
   }
 
   searchKNN(queryVector: Float32Array, k: number, efSearch?: number): Array<{ label: number; distance: number }> {
@@ -128,7 +162,7 @@ export class VectorStore {
     }
 
     const result = this.hnswIndex.searchKnn(Array.from(queryVector), k);
-    return result.neighbors.map((neighbor, i) => ({
+    return result.neighbors.map((neighbor: number, i: number) => ({
       label: neighbor,
       distance: result.distances[i]
     }));
@@ -179,22 +213,41 @@ export class VectorStore {
   }
 
   deleteBlocksByFile(filePath: string): void {
+    // Get block IDs first
     const getBlocksStmt = this.db.prepare('SELECT id FROM code_blocks WHERE file_path = ?');
     const blocks = getBlocksStmt.all(filePath) as Array<{ id: string }>;
 
-    const deleteStmt = this.db.prepare('DELETE FROM code_blocks WHERE file_path = ?');
-    deleteStmt.run(filePath);
-
+    // Delete FTS entries
     const deleteFtsStmt = this.db.prepare('DELETE FROM code_fts WHERE block_id IN (SELECT id FROM code_blocks WHERE file_path = ?)');
     deleteFtsStmt.run(filePath);
 
+    // Mark vectors as deleted in HNSW and remove mappings
     for (const block of blocks) {
-      const label = parseInt(block.id.replace(/[^0-9]/g, ''), 36);
-      this.hnswIndex?.markDelete(label);
+      const mapRow = this.db.prepare('SELECT label FROM vector_map WHERE block_id = ?').get(block.id) as any;
+      if (mapRow && this.hnswIndex) {
+        try { this.hnswIndex.markDelete(mapRow.label); } catch { /* already deleted */ }
+      }
+      this.db.prepare('DELETE FROM vector_map WHERE block_id = ?').run(block.id);
     }
+
+    // Delete code blocks
+    const deleteStmt = this.db.prepare('DELETE FROM code_blocks WHERE file_path = ?');
+    deleteStmt.run(filePath);
   }
 
   fullTextSearch(query: string, limit?: number): Array<{ blockId: string; score: number }> {
+    // Sanitize query for FTS5 - escape special characters and wrap in quotes
+    const sanitized = query
+      .replace(/[^\w\s]/g, ' ') // Remove special characters
+      .trim()
+      .split(/\s+/) // Split into words
+      .filter(word => word.length > 0)
+      .join(' OR '); // Join with OR operator
+    
+    if (!sanitized) {
+      return [];
+    }
+    
     const stmt = this.db.prepare(`
       SELECT block_id, bm25(code_fts) as score 
       FROM code_fts 
@@ -203,7 +256,7 @@ export class VectorStore {
       ${limit ? 'LIMIT ?' : ''}
     `);
     
-    const results = (limit ? stmt.all(query, limit) : stmt.all(query)) as Array<{ block_id: string; score: number }>;
+    const results = (limit ? stmt.all(sanitized, limit) : stmt.all(sanitized)) as Array<{ block_id: string; score: number }>;
     
     return results.map(r => ({
       blockId: r.block_id,

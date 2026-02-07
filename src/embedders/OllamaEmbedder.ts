@@ -1,4 +1,4 @@
-import { IEmbedder, EmbedderOptions } from './EmbedderInterface';
+import { IEmbedder, EmbedderOptions } from './EmbedderInterface.js';
 
 interface OllamaEmbeddingResponse {
   embedding: number[];
@@ -48,7 +48,10 @@ export class OllamaEmbedder implements IEmbedder {
       throw new Error('Embedder not initialized. Call initialize() first.');
     }
 
-    const hash = this.hashText(text);
+    // Truncate text to prevent context length errors (nomic-embed-text has ~8k token limit)
+    const truncatedText = this.truncateText(text, 2000);
+
+    const hash = this.hashText(truncatedText);
     if (this.cache.has(hash)) {
       return this.cache.get(hash)!;
     }
@@ -61,7 +64,7 @@ export class OllamaEmbedder implements IEmbedder {
         },
         body: JSON.stringify({
           model: this.modelName,
-          prompt: text
+          prompt: truncatedText
         })
       });
 
@@ -99,7 +102,15 @@ export class OllamaEmbedder implements IEmbedder {
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize);
       const batchEmbeddings = await Promise.all(
-        batch.map(text => this.embed(text))
+        batch.map(async (text, idx) => {
+          try {
+            return await this.embed(text);
+          } catch (error) {
+            console.warn(`Failed to embed text block ${i + idx}: ${error}`);
+            // Return zero vector as fallback
+            return new Float32Array(this.dimensions).fill(0);
+          }
+        })
       );
       results.push(...batchEmbeddings);
     }
@@ -128,6 +139,24 @@ export class OllamaEmbedder implements IEmbedder {
       hash = hash & hash;
     }
     return hash.toString(36);
+  }
+
+  private truncateText(text: string, maxTokens: number): string {
+    // Rough approximation: 1 token ≈ 4 characters
+    const maxChars = maxTokens * 4;
+    if (text.length <= maxChars) {
+      return text;
+    }
+    
+    // Truncate and try to end at a line boundary
+    const truncated = text.slice(0, maxChars);
+    const lastNewline = truncated.lastIndexOf('\n');
+    
+    if (lastNewline > maxChars * 0.8) {
+      return truncated.slice(0, lastNewline);
+    }
+    
+    return truncated;
   }
 
   getCacheSize(): number {

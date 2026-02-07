@@ -60,6 +60,12 @@ CREATE VIRTUAL TABLE IF NOT EXISTS code_fts USING fts5(
     symbol_name,
     tokenize='porter unicode61'
 );
+
+CREATE TABLE IF NOT EXISTS vector_map (
+    label INTEGER PRIMARY KEY,
+    block_id TEXT NOT NULL,
+    UNIQUE(block_id)
+);
 `;
 
 export const insertInitialMetadataSQL = `

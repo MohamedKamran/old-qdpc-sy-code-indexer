@@ -1,4 +1,4 @@
-import { QueryExpansionResult } from './types';
+import { QueryExpansionResult } from './types.js';
 
 export class QueryExpander {
   private programmingSynonyms: Record<string, string[]> = {

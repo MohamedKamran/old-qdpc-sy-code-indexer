@@ -1,8 +1,8 @@
-import { ConfigManager } from '../core/ConfigManager';
-import { VectorStore } from '../storage/VectorStore';
-import { OllamaEmbedder } from '../embedders/OllamaEmbedder';
-import type { IEmbedder } from '../embedders/EmbedderInterface';
-import { SearchResult, SearchOptions } from './types';
+import { ConfigManager } from '../core/ConfigManager.js';
+import { VectorStore } from '../storage/VectorStore.js';
+import { OllamaEmbedder } from '../embedders/OllamaEmbedder.js';
+import type { IEmbedder } from '../embedders/EmbedderInterface.js';
+import { SearchResult, SearchOptions } from './types.js';
 
 export class SemanticSearch {
   private configManager: ConfigManager;

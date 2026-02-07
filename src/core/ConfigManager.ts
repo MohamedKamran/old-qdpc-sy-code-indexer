@@ -60,7 +60,7 @@ const DEFAULT_CONFIG: Config = {
   indexing: {
     batchSize: 50,
     concurrency: 4,
-    chunkTokens: 512,
+    chunkTokens: 384,
     overlapTokens: 50,
     maxFileSize: 1048576,
     excludePatterns: [

@@ -1,4 +1,4 @@
-import { SearchResult } from './types';
+import { SearchResult } from './types.js';
 
 export class ReRanker {
   async rerank(results: SearchResult[], query: string): Promise<SearchResult[]> {

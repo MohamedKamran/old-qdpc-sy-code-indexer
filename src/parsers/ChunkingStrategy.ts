@@ -27,8 +27,8 @@ export interface ChunkingOptions {
 }
 
 const DEFAULT_OPTIONS: ChunkingOptions = {
-  targetTokens: 512,
-  maxTokens: 2048,
+  targetTokens: 384,
+  maxTokens: 1500,
   overlapTokens: 50,
   preserveFunctionBoundaries: true,
   preserveClassBoundaries: true,
@@ -213,7 +213,7 @@ export class ChunkingStrategy {
     return blocks[0];
   }
 
-  private createFileBlock(
+  createFileBlock(
     filePath: string,
     content: string,
     language: string

@@ -2,10 +2,10 @@ import { Command } from 'commander';
 import ora from 'ora';
 import chalk from 'chalk';
 import path from 'path';
-import { IndexManager } from '../../core/IndexManager';
-import { ConfigManager } from '../../core/ConfigManager';
-import { StateManager } from '../../core/StateManager';
-import { CacheManager } from '../../core/CacheManager';
+import { IndexManager } from '../../core/IndexManager.js';
+import { ConfigManager } from '../../core/ConfigManager.js';
+import { StateManager } from '../../core/StateManager.js';
+import { CacheManager } from '../../core/CacheManager.js';
 
 export const indexCommand = new Command('index')
   .description('Index the workspace')

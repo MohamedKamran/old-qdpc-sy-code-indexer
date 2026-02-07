@@ -1,8 +1,9 @@
 import pLimit from 'p-limit';
-import { CodeParser } from '../parsers/CodeParser';
-import type { IEmbedder } from '../embedders/EmbedderInterface';
-import { VectorStore } from '../storage/VectorStore';
-import { CacheManager } from '../core/CacheManager';
+import { CodeParser } from '../parsers/CodeParser.js';
+import type { IEmbedder } from '../embedders/EmbedderInterface.js';
+import { VectorStore } from '../storage/VectorStore.js';
+import { CacheManager } from '../core/CacheManager.js';
+import { StateManager } from '../core/StateManager.js';
 
 import * as fs from 'fs/promises';
 import crypto from 'crypto';
@@ -18,19 +19,25 @@ export class BatchProcessor {
   private embedder: IEmbedder;
   private vectorStore: VectorStore;
   private cacheManager: CacheManager;
+  private stateManager: StateManager;
   private options: BatchProcessorOptions;
+  private workspacePath: string;
 
   constructor(
+    workspacePath: string,
     parser: CodeParser,
     embedder: IEmbedder,
     vectorStore: VectorStore,
     cacheManager: CacheManager,
+    stateManager: StateManager,
     options: BatchProcessorOptions
   ) {
+    this.workspacePath = workspacePath;
     this.parser = parser;
     this.embedder = embedder;
     this.vectorStore = vectorStore;
     this.cacheManager = cacheManager;
+    this.stateManager = stateManager;
     this.options = options;
   }
 
@@ -42,7 +49,7 @@ export class BatchProcessor {
 
     const processFile = async (filePath: string) => {
       try {
-        const relativePath = path.relative(process.cwd(), filePath);
+        const relativePath = path.relative(this.workspacePath, filePath);
         const content = await fs.readFile(filePath, 'utf-8');
         const fileHash = this.calculateHash(content);
         const stats = await fs.stat(filePath);
@@ -68,6 +75,7 @@ export class BatchProcessor {
             const block = parsed.blocks[i];
             this.vectorStore.addCodeBlock(block);
             this.vectorStore.addVector(block.id, embeddings[i]);
+            this.stateManager.incrementBlocks();
           }
 
           this.vectorStore.addFileMetadata({
@@ -89,6 +97,8 @@ export class BatchProcessor {
           stats.mtimeMs
         );
 
+        this.stateManager.incrementFiles();
+        this.stateManager.updateLanguageStats(parsed.language);
         processedFiles++;
         
         if (processedFiles % 10 === 0) {

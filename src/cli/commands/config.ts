@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import path from 'path';
-import { ConfigManager } from '../../core/ConfigManager';
+import { ConfigManager } from '../../core/ConfigManager.js';
 
 export const configCommand = new Command('config')
   .description('Manage configuration')

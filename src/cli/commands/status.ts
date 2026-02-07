@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import path from 'path';
-import { VectorStore } from '../../storage/VectorStore';
-import { ConfigManager } from '../../core/ConfigManager';
+import { VectorStore } from '../../storage/VectorStore.js';
+import { ConfigManager } from '../../core/ConfigManager.js';
 
 export const statusCommand = new Command('status')
   .description('Show index status')

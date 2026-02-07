@@ -1,6 +1,6 @@
 import chokidar from 'chokidar';
 import path from 'path';
-import { BatchProcessor } from './BatchProcessor';
+import { BatchProcessor } from './BatchProcessor.js';
 
 export interface FileWatcherOptions {
   ignored?: string[];
